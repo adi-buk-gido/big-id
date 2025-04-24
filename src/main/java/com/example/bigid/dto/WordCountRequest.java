@@ -1,4 +1,4 @@
-package com.example.lemonade.dto;
+package com.example.bigid.dto;
 
 
 import javax.validation.constraints.Max;

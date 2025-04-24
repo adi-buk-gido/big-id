@@ -1,4 +1,4 @@
-package com.example.lemonade.consts;
+package com.example.bigid.consts;
 
 public class RestConsts {
 

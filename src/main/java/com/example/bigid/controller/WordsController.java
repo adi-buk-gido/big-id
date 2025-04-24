@@ -1,4 +1,4 @@
-package com.example.lemonade.controller;
+package com.example.bigid.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -20,11 +20,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-
-import com.example.lemonade.consts.RestConsts;
-import com.example.lemonade.dto.WordCountRequest;
-import com.example.lemonade.service.WordsCounterService;
-import com.example.lemonade.dto.LemonadeResponseDto;
+import com.example.bigid.consts.RestConsts;
+import com.example.bigid.dto.LemonadeResponseDto;
+import com.example.bigid.dto.WordCountRequest;
+import com.example.bigid.service.WordsCounterService;
 
 
 @RestController

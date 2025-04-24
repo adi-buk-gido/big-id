@@ -1,4 +1,4 @@
-package com.example.lemonade.data;
+package com.example.bigid.data;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
