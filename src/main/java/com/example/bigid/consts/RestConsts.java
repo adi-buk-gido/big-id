@@ -2,10 +2,10 @@ package com.example.bigid.consts;
 
 public class RestConsts {
 
-    public static final String MAIN_ROOT =  "/lemonade";
+    public static final String MAIN_ROOT =  "/bigid";
 
-    public static final class Words {
-        public static final String ROOT =  MAIN_ROOT + "/words";
+    public static final class StringFinder {
+        public static final String ROOT =  MAIN_ROOT + "/find";
     }
 
     public static final class CommonHeaders {
