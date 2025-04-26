@@ -62,3 +62,9 @@ The `MainApplication` class demonstrates a full sample run:
 - Results are printed in no particular order (depending on thread completion timing).
 - The number of lines processed per batch and number of threads are configurable for tuning performance.
 - No external frameworks for concurrency; standard Java `ExecutorService` is used.
+- If a matcher encounters an error, the program continues running and returns partial results instead of failing the entire execution.
+- Lines are processed as complete units; words are never split across two lines.
+- Word separation is based solely on spaces; other delimiters are not considered for splitting words.
+- Matching is case-insensitive but ignores matches where words contain special characters.
+(For example, searching for Hows will not match How's.)
+- Large files are processed in configurable batches to optimize memory usage and concurrency.
