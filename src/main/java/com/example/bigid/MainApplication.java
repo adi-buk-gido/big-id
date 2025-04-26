@@ -6,28 +6,17 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import com.example.bigid.service.StringFinderService;
-import org.springframework.context.ApplicationContext;
 
 
-@SpringBootApplication
-public class LemonadeApplication {
+public class MainApplication {
 
-	    private static final Logger logger = LoggerFactory.getLogger(LemonadeApplication.class);
+	    private static final Logger logger = LoggerFactory.getLogger(MainApplication.class);
 
 	public static void main(String[] args) throws Exception {
-		logger.info("Starting Spring Boot application...");
-		SpringApplication.run(LemonadeApplication.class, args);
-		logger.info("Application started successfully.");
 
-		ApplicationContext context = SpringApplication.run(LemonadeApplication.class, args);
-
-        StringFinderService stringFinderService = context.getBean(StringFinderService.class);
-
-		List<String> stringsToFind = new ArrayList<>(Arrays.asList(
+		List<String> targetWords = new ArrayList<>(Arrays.asList(
             "James", "John", "Robert", "Michael", "William",
             "David", "Richard", "Charles", "Joseph", "Thomas",
             "Christopher", "Daniel", "Paul", "Mark", "Donald",
@@ -39,7 +28,13 @@ public class LemonadeApplication {
             "Walter", "Patrick", "Peter", "Harold", "Douglas",
             "Henry", "Carl", "Arthur", "Ryan", "Roger"
         ));;
-		stringFinderService.findStrings("http://norvig.com/big.txt", stringsToFind);
+
+        List<String> stringsToFind2 = new ArrayList<>(Arrays.asList(
+            "James", "John"
+        ));;
+
+        StringFinderService stringFinderService = new StringFinderService();
+		stringFinderService.findStrings("http://norvig.com/big.txt", targetWords);
 	}
 
 }

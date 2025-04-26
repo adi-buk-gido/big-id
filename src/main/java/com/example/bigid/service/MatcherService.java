@@ -2,15 +2,15 @@ package com.example.bigid.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 import com.example.bigid.data.ValueLocation;
 
-@Service
 public class MatcherService {
 
     private static final Logger logger = LoggerFactory.getLogger(MatcherService.class);
@@ -18,8 +18,8 @@ public class MatcherService {
     private static ConcurrentHashMap<String, List<ValueLocation>> stringLocation = new ConcurrentHashMap<>();
 
 
-    public void matchBatch(List<String> batch, int batchStartingLine,  List<String> stringsToFindLC) throws Exception{
-        logger.info("Processing batch to match strings..");
+    public void matchBatch(List<String> batch, int batchStartingLine,  Set<String> lowercaseTargetWords, Map<String, String> lowercaseToOriginal) throws Exception{
+        logger.info("Processing batch to match strings in starting line: {}", batchStartingLine);
         //Save in the map only the relevant 
         for (int i = 0; i < batch.size(); i++) {
             String originalLine = batch.get(i);
@@ -37,8 +37,9 @@ public class MatcherService {
                 //Clear the word from special chars
                 String cleanWord = word.replaceAll("[^a-zA-Z0-9]", "");
 
-                if (stringsToFindLC.contains(cleanWord)) {
-                    stringLocation.computeIfAbsent(cleanWord, k -> Collections.synchronizedList(new ArrayList<>()))
+                if (lowercaseTargetWords.contains(cleanWord)) {
+                    String originalInputWord = lowercaseToOriginal.get(cleanWord);
+                    stringLocation.computeIfAbsent(originalInputWord, k -> Collections.synchronizedList(new ArrayList<>()))
                            .add(new ValueLocation(batchStartingLine + i, charOffset));
                 }
                 //Continue the search start with the new charOffset of the new word
@@ -52,7 +53,7 @@ public class MatcherService {
         return line.indexOf(word, fromIndex);
     }
 
-    public static ConcurrentHashMap<String, List<ValueLocation>> getStringLocation(){
+    public ConcurrentHashMap<String, List<ValueLocation>> getStringLocation(){
         return stringLocation;
     }
 
