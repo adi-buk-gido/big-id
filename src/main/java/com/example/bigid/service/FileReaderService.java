@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,32 +17,34 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FileReaderService{
+public class FileReaderService {
 
-    //Can be taken out to a property to be controlled from outside
-    private static final int BATCH_SIZE = 5000;
+    // Can be taken out to a property to be controlled from outside
+    private final int BATCH_SIZE = 5000;
 
-    private static final Logger logger = LoggerFactory.getLogger(FileReaderService.class);
-    private static int cores = Runtime.getRuntime().availableProcessors();
-    private static final ExecutorService executor = Executors.newFixedThreadPool(cores * 2);
+    private final Logger logger = LoggerFactory.getLogger(FileReaderService.class);
+    private int cores = Runtime.getRuntime().availableProcessors();
+    private final ExecutorService executor = Executors.newFixedThreadPool(cores * 2);
+    private final MatcherService matcherService;
 
-    MatcherService matcherService = new MatcherService();
-
+    public FileReaderService(MatcherService matcherService) {
+        this.matcherService = matcherService;
+    }
 
     /**
      * Reads the file and calls matcher service
-     * @param url                       The URL to search the words in
-     * @param lowercaseTargetWords      Lowercase target words to search for
+     * 
+     * @param url                  The URL to search the words in
+     * @param lowercaseTargetWords Lowercase target words to search for
      * @throws IOException
      * @throws InterruptedException
      */
-    public void readFile(String url, Set<String> lowercaseTargetWords, Map<String, String> lowercaseToOriginalTargetWords) throws IOException, InterruptedException {
+    public void readFile(String url, Set<String> lowercaseTargetWords,
+            Map<String, String> lowercaseToOriginalTargetWords) throws IOException, InterruptedException {
         logger.debug("Opening connection with URL:{}", url);
         URL urlToSearch = new URL(url);
-        URLConnection connection = urlToSearch.openConnection();
-
         logger.debug("Reading URL data in batches of: {}", BATCH_SIZE);
-        InputStream openStream = connection.getInputStream();
+        InputStream openStream = openStream(urlToSearch);
         InputStreamReader reader = new InputStreamReader(openStream);
         BufferedReader buffReader = new BufferedReader(reader);
         List<String> batch = new ArrayList<>();
@@ -52,48 +53,58 @@ public class FileReaderService{
 
         List<Future<Boolean>> futures = new ArrayList<>();
         while ((currentLineContent = buffReader.readLine()) != null) {
-                currentLineContent = currentLineContent.toLowerCase();
-                batch.add(currentLineContent);
+            currentLineContent = currentLineContent.toLowerCase();
+            batch.add(currentLineContent);
 
-                if (batch.size() == BATCH_SIZE) {
-                    //Passing a copy so it doesnt get cleared
-                    List<String> batchCopy = new ArrayList<>(batch);
-                    int batchStartingLine = currentLineNumber - BATCH_SIZE + 1;
-                    futures.add(executor.submit(() -> {matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords, lowercaseToOriginalTargetWords); return true;}));
-                    batch.clear();
-                }
-                currentLineNumber++;
+            if (batch.size() == BATCH_SIZE) {
+                // Passing a copy so it doesnt get cleared
+                List<String> batchCopy = new ArrayList<>(batch);
+                int batchStartingLine = currentLineNumber - BATCH_SIZE + 1;
+                futures.add(executor.submit(() -> {
+                    matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords,
+                            lowercaseToOriginalTargetWords);
+                    return true;
+                }));
+                batch.clear();
+            }
+            currentLineNumber++;
         }
 
-            // Process any remaining lines
-            if (!batch.isEmpty()) {
-                List<String> batchCopy = new ArrayList<>(batch);
-                int batchStartingLine = currentLineNumber - batch.size();
-                futures.add(executor.submit(() ->  {matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords, lowercaseToOriginalTargetWords); return true;}));
-            }
+        // Process any remaining lines
+        if (!batch.isEmpty()) {
+            List<String> batchCopy = new ArrayList<>(batch);
+            int batchStartingLine = currentLineNumber - batch.size();
+            futures.add(executor.submit(() -> {
+                matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords,
+                        lowercaseToOriginalTargetWords);
+                return true;
+            }));
+        }
 
         List<Boolean> allMatchersResults = new ArrayList<>();
         for (Future<Boolean> future : futures) {
             try {
                 allMatchersResults.add(future.get()); // blocks until task is done
             } catch (Exception e) {
-                System.err.println("Batch failed: " + e.getMessage());
+                logger.error("Batch processing failed", e);
+                allMatchersResults.add(false);
             }
         }
 
-        if(allMatchersResults.contains(false)){
+        if (allMatchersResults.contains(false)) {
             logger.info("Some matchers failed to process, partial data available");
         } else {
             logger.info("All matches completed succeddfuly");
         }
     }
 
-
-    public static void shutdownAndAwait() throws InterruptedException{
+    public void shutdownAndAwait() throws InterruptedException {
         executor.shutdown();
         executor.awaitTermination(1, TimeUnit.HOURS);
     }
 
-    
+    protected InputStream openStream(URL url) throws IOException {
+        return url.openConnection().getInputStream();
+    }
 
 }

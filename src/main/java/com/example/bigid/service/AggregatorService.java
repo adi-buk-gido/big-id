@@ -11,13 +11,15 @@ import com.example.bigid.data.ValueLocation;
 
 public class AggregatorService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AggregatorService.class);
+    private final Logger logger = LoggerFactory.getLogger(AggregatorService.class);
 
-    MatcherService matcherService = new MatcherService();
+    private final MatcherService matcherService;
 
+    public AggregatorService(MatcherService matcherService) {
+        this.matcherService = matcherService;
+    }
 
-
-    public void aggregateResults() throws Exception{
+    public void aggregateResults() throws Exception {
         logger.info("Aggregate and print results");
         ConcurrentHashMap<String, List<ValueLocation>> results = matcherService.getStringLocation();
         for (Map.Entry<String, List<ValueLocation>> entry : results.entrySet()) {
