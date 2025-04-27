@@ -52,33 +52,23 @@ public class FileReaderService {
         int currentLineNumber = 0;
 
         List<Future<Boolean>> futures = new ArrayList<>();
+
         while ((currentLineContent = buffReader.readLine()) != null) {
             currentLineContent = currentLineContent.toLowerCase();
             batch.add(currentLineContent);
 
             if (batch.size() == BATCH_SIZE) {
-                // Passing a copy so it doesnt get cleared
-                List<String> batchCopy = new ArrayList<>(batch);
-                int batchStartingLine = currentLineNumber - BATCH_SIZE + 1;
-                futures.add(executor.submit(() -> {
-                    matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords,
-                            lowercaseToOriginalTargetWords);
-                    return true;
-                }));
+                callMatcher(lowercaseTargetWords, lowercaseToOriginalTargetWords, batch, currentLineNumber,
+                    futures);
                 batch.clear();
             }
             currentLineNumber++;
-        }
+        } 
 
         // Process any remaining lines
         if (!batch.isEmpty()) {
-            List<String> batchCopy = new ArrayList<>(batch);
-            int batchStartingLine = currentLineNumber - batch.size();
-            futures.add(executor.submit(() -> {
-                matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords,
-                        lowercaseToOriginalTargetWords);
-                return true;
-            }));
+            callMatcher(lowercaseTargetWords, lowercaseToOriginalTargetWords, batch, currentLineNumber,
+                    futures);
         }
 
         List<Boolean> allMatchersResults = new ArrayList<>();
@@ -98,6 +88,20 @@ public class FileReaderService {
         }
     }
 
+    private void callMatcher(Set<String> lowercaseTargetWords,
+            Map<String, String> lowercaseToOriginalTargetWords, List<String> batch, int currentLineNumber,
+            List<Future<Boolean>> futures) {
+        List<String> batchCopy = new ArrayList<>(batch);
+        int batchStartingLine = currentLineNumber - batch.size();
+        futures.add(executor.submit(() -> {
+            matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords,
+                    lowercaseToOriginalTargetWords);
+            return true;
+        }));
+    }
+
+
+    //TODO call it
     public void shutdownAndAwait() throws InterruptedException {
         executor.shutdown();
         executor.awaitTermination(1, TimeUnit.HOURS);
