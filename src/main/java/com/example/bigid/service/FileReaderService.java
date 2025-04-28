@@ -53,22 +53,35 @@ public class FileReaderService {
 
         List<Future<Boolean>> futures = new ArrayList<>();
 
+        //try finally
         while ((currentLineContent = buffReader.readLine()) != null) {
             currentLineContent = currentLineContent.toLowerCase();
             batch.add(currentLineContent);
 
             if (batch.size() == BATCH_SIZE) {
-                callMatcher(lowercaseTargetWords, lowercaseToOriginalTargetWords, batch, currentLineNumber,
-                    futures);
+                // Passing a copy so it doesnt get cleared
+                List<String> batchCopy = new ArrayList<>(batch);
+                int batchStartingLine = currentLineNumber - BATCH_SIZE + 1;
+                futures.add(executor.submit(() -> {
+                    matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords,
+                            lowercaseToOriginalTargetWords);
+                    return true;
+                }));
                 batch.clear();
             }
             currentLineNumber++;
         } 
 
         // Process any remaining lines
+        //TODO move into a function and call the top one as well
         if (!batch.isEmpty()) {
-            callMatcher(lowercaseTargetWords, lowercaseToOriginalTargetWords, batch, currentLineNumber,
-                    futures);
+            List<String> batchCopy = new ArrayList<>(batch);
+            int batchStartingLine = currentLineNumber - batch.size();
+            futures.add(executor.submit(() -> {
+                matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords,
+                        lowercaseToOriginalTargetWords);
+                return true;
+            }));
         }
 
         List<Boolean> allMatchersResults = new ArrayList<>();
@@ -86,18 +99,6 @@ public class FileReaderService {
         } else {
             logger.info("All matches completed succeddfuly");
         }
-    }
-
-    private void callMatcher(Set<String> lowercaseTargetWords,
-            Map<String, String> lowercaseToOriginalTargetWords, List<String> batch, int currentLineNumber,
-            List<Future<Boolean>> futures) {
-        List<String> batchCopy = new ArrayList<>(batch);
-        int batchStartingLine = currentLineNumber - batch.size();
-        futures.add(executor.submit(() -> {
-            matcherService.matchBatch(batchCopy, batchStartingLine, lowercaseTargetWords,
-                    lowercaseToOriginalTargetWords);
-            return true;
-        }));
     }
 
 
